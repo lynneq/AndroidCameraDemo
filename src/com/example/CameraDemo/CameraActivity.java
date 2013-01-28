@@ -1,64 +1,82 @@
 package com.example.CameraDemo;
 
 import android.app.Activity;
-import android.content.pm.PackageManager;
 import android.hardware.Camera;
+import android.hardware.Camera.PictureCallback;
+import android.hardware.Camera.ShutterCallback;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ImageView;
-import android.widget.Toast;
+import android.widget.Button;
+import android.widget.FrameLayout;
 
-import static android.hardware.Camera.getNumberOfCameras;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
-public class CameraActivity extends Activity
-{
+public class CameraActivity extends Activity {
     public static final String DEBUG_TAG = "CameraActivity";
-    private ImageView imageView;
     private Camera camera;
+    private Preview preview;
+    private Button button;
+    private ShutterCallback shutterCallback = new ShutterCallback() {
+        @Override
+        public void onShutter() {
+            Log.d(DEBUG_TAG, "onCreate'd");
+        }
+    };
+
+    private PictureCallback rawCallBack = new PictureCallback() {
+        @Override
+        public void onPictureTaken(byte[] bytes, Camera camera) {
+            Log.d(DEBUG_TAG, "onPictureTaken - raw");
+        }
+    };
+
+    private PictureCallback jpegCallback = new PictureCallback() {
+        @Override
+        public void onPictureTaken(byte[] data, Camera camera) {
+            FileOutputStream outputStream = null;
+            try {
+                outputStream = new FileOutputStream(String.format("/sdcard/%d.jpg", System.currentTimeMillis()));
+                outputStream.write(data);
+                outputStream.close();
+
+                Log.d(DEBUG_TAG, "onPictureTaken - jpeg wrote bytes: " + data.length);
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+            }
+            Log.d(DEBUG_TAG, "onPictureTaken - jpeg");
+        }
+    };
 
     @Override
-    public void onCreate(Bundle savedInstanceState){
+    public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
-        takePitureWithFrontCamera();
-    }
+        preview = new Preview(this);
+        ((FrameLayout) findViewById(R.id.preview)).addView(preview);
 
-    public void takePitureWithFrontCamera() {
-        if(!getPackageManager().hasSystemFeature(PackageManager.FEATURE_CAMERA)){
-            Toast.makeText(this, "There is no camera on this device", Toast.LENGTH_LONG).show();
-        }else {
-            int cameraId = findFrontFacingCamera();
-            if(cameraId<0){
-                Toast.makeText(this, "No Front Facing Camera found", Toast.LENGTH_LONG).show();
-            }else {
-                camera = Camera.open(cameraId);
+        button = (Button) findViewById(R.id.captureFront);
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                preview.camera.takePicture(shutterCallback, rawCallBack, jpegCallback);
             }
-        }
-    }
+        });
+        Log.d(DEBUG_TAG, "On create");
 
-    public void onClick(View view){//???
-        camera.takePicture(null, null, new PhotoHandler(getApplicationContext()));
-    }
-
-    private int findFrontFacingCamera() {
-        for(int i =0; i< getNumberOfCameras(); i++){
-            Camera.CameraInfo info = new Camera.CameraInfo();
-            Camera.getCameraInfo(i, info);
-            if(info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT ){
-                Log.d(DEBUG_TAG, "Camera found");
-                return i;
-            }
-        }
-        return -1;
     }
 
     @Override
-    public void onPause(){
-        if(camera != null){
+    public void onPause() {
+        if (camera != null) {
             camera.release();
-            camera =null;
+            camera = null;
         }
         super.onPause();
     }

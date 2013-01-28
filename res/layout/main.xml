@@ -3,22 +3,29 @@
               android:orientation="vertical"
               android:layout_width="fill_parent"
               android:layout_height="fill_parent"
+              android:id="@+id/layout"
         >
 
     <TextView
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:layout_marginBottom="100dp"
-            android:text="Hello World, MyActivity"
+            android:text="Hello World, Camera"
+            android:textSize="24sp"
             />
+
     <Button
             android:id="@+id/captureFront"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_alignParentBottom="true"
-            android:layout_alignParentLeft="true"
             android:text="Take Picture"
             android:onClick="onClick"
+            />
+
+    <FrameLayout
+            android:id="@+id/preview"
+            android:layout_width="fill_parent"
+            android:layout_height="fill_parent"
+            android:layout_weight="1"
             />
 </LinearLayout>
 
